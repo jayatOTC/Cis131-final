@@ -1,0 +1,251 @@
+<!--    Developer:  Jay Allen
+        Date        5/13/19
+        Purpose:    Final Exam Movie ticket order                          program-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Jay's Theatre Listings</title>
+        <script src="https://unpkg.com/vue"></script>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+            integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    </head>
+
+    <body>
+        <div class="container" id="app">
+            <div class="jumbotron jumbotron-fluid" 
+                style=" color: black; background-color: whitesmoke">
+                <img src="cart.jpg" alt="cart image" style="padding-left: 950px; position: absolute; top: 20px">
+                <p style="color: black; padding-left: 1020px; position: absolute; top:20px; font-size: 20px; ">
+                    {{cartItem}}</p>
+                <div class="container">
+
+                    <h1 style="text-align: center; font-weight: bold; font-family: Georgia, 'Times New Roman', Times, serif">Jay's Multiplex Theaters</h1>
+                </div>
+            </div>
+            <div style="display:flex;">
+                <!-- Slice(0, X) where X = number of movies -->
+                <div class="card" 
+                    style="width: 18rem;" v-for="result in results.slice(0,3)">
+                    <img v-bind:src="images.base_url + 'w500' + result.poster_path" v-bind:alt="result.title">
+                    <div class="card-body">
+
+                        <h5>{{ result.title }}</h5>
+                        <button type="button" class="btn btn-primary" v-on:click="buyAdultTicket(result.title)">Adult
+                            Ticket</button>
+                        <button type="button" class="btn btn-primary" style="display:inline-block;"
+                            v-on:click="buyChildTicket(result.title)">Child Ticket</button>
+                        <p>{{ result.overview}}</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <div v-if="cartItem > 0">
+                <h5 style="font-size: 30px;">Ticket Summary</h5>
+                <div class="container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Movie</th>
+                                <th scope="col">Adult Tickets</th>
+                                <th scope="col">Children's Tickets </th>
+                                <th scope="col">Subtotal</th>
+                                <th scope="col">Button</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in items">
+                                <th scope="col">{{item.title}}</th>
+                                <th scope="col"> <button class="btn btn-default"
+                                        v-on:click="DeleteAdultTicket(item.title)" v-if="item.adult > 0">
+                                        &times;</button>
+                                    <div style="position:absolute;" v-if="item.adult > 0">&nbsp;{{item.adult}} X
+                                        ${{adult}}</div>
+                                </th>
+                                <th scope="col"> <button class="btn btn-default"
+                                        v-on:click="DeleteChildTicket(item.title)" v-if="item.child > 0">
+                                        &times;</button>
+                                    <div v-if="item.childTicket > 0">&nbsp;{{item.child}} X ${{child}} </div>
+                                </th>
+                                <th scope="col">${{item.Subtotal}}</th>
+                                <th scope="col"><button type="button" class="btn btn-primary"
+                                        v-on:click="Delete1(item.title)">Remove</button></th>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <div style="position:relative; right:-555px;">
+                                        <p>Adult Subtotal:{this.items.adult}}</p>
+                                    </div>
+                                </th>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <div style="position:relative; right:-555px;">
+                                        <p>Children Subtotal{{this.items.child}}@{{}}</p>
+                                    </div>
+                                </th>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <div style="position:relative; right:-555px;">
+                                        <p>Total</p>
+                                    </div>
+                                </th>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <footer>
+
+            </footer>
+        </div>
+
+        <script>
+            const vm = new Vue({
+                el: '#app',
+                data: {
+                    results: [],
+                    images: [],
+                    items: [],
+                    cartItem: 0,
+                    child: 0.00,
+                    childClick: [0],
+                    adult: 0.00,
+                    AdultClick: [0],
+                    Subtotal: 0.00,
+                    TotalAdultClicks: 0,
+                    adultPrice : 15.00,
+                    childPrice : 5.00,
+
+                },
+                methods: {
+                    //Order Child Ticket Function
+                    buyChildTicket(movie) {
+                        this.child = this.childPrice;
+                        vm.dupeChecker(movie);
+                        for (var i = 0; i < this.items.length; i++) {
+                            if (this.items[i].title == movie) {
+                                this.items[i].child = parseInt(parseInt(this.items[i].child) + 1);
+                            } // end of inner if
+                        } // end of for loop
+                        vm.SubTotal(movie);
+                        this.cartItem += 1;
+                    }, // end of orderChild
+                    //Check Movie Name For Duplicates Function
+                    //Peter helped me with this section of the code here.
+                    dupeChecker(movie) {
+                        var tfal = false;
+                        if (vm.items.length != 0) {
+                            for (i = 0; i < vm.items.length; i++) {
+                                loopedItem = vm.items[i].title;
+                                if (loopedItem == movie) {
+                                    var tfal = true;
+                                } // end of if
+                            } // end of for loop
+                            if (!tfal) {
+                                vm.items.push({
+                                    title: movie,
+                                    child: vm.childClick,
+                                    adult: vm.AdultClick,
+                                    Subtotal: vm.Subtotal
+                                });
+                            } // end of if
+                        } else {
+                            vm.items.push({
+                                title: movie,
+                                child: vm.childClick,
+                                adult: vm.AdultClick,
+                                Subtotal: vm.Subtotal
+                            });
+                        } // end of else
+                    }, // end of dupeChecker
+                    //Buy an Adult Ticket Function 
+                    buyAdultTicket(movie) {
+                        var itemSelected = movie;
+                        this.adult = items.adultPrice;
+                        vm.dupeChecker(movie); //Function to check duplicate movie titles are not being produced
+
+                        for (var i = 0; i < this.items.length; i++) {
+                            if (this.items[i].title == movie) {
+                                this.items[i].adult = parseInt(parseInt(this.items[i].adult) + 1);
+                            } // end of if
+                        } // end of for loop
+                        vm.SubTotal(
+                        movie); //This will call the subtotal function to display the subtotal of the specific movie
+
+
+                        this.cartItem += 1 //Adding one to the cart item when clicked
+
+                    },
+                    // Subtotal for selected movie Function
+                    SubTotal(movie) {
+                        for (var i = 0; i < this.items.length; i++) {
+                            if (this.items[i].title == movie) {
+                                this.items[i].Subtotal = parseInt(parseInt(this.items[i].child * items.childPrice) +
+                                    parseInt(this.items[i].adult * items.adultPrice00));
+                            } // end of if
+                        } // end of for loop
+                    }, // end of Subtotal
+                    //Deltete Child Ticket Function 
+                    DeleteChildTicket(movie) {
+                        for (var i = 0; i < this.items.length; i++) {
+                            if (this.items[i].title == movie) {
+                                if (this.items[i].child > 0) {
+                                    this.items[i].child = parseInt(parseInt(this.items[i].child) - 1);
+                                    this.items[i].Subtotal = parseInt(parseInt(this.items[i].Subtotal) - items.childPrice);
+                                    this.cartItem += -1;
+                                } // end of inner if
+                            } // end of if
+                        } // end of for loop
+                    },
+                    //Delete Adult Ticket Function
+                    DeleteAdultTicket(movie) {
+                        for (var i = 0; i < this.items.length; i++) {
+                            if (this.items[i].title == movie) {
+                                if (this.items[i].adult > 0) {
+                                    this.items[i].adult = parseInt(parseInt(this.items[i].adult - 1));
+                                    this.items[i].Subtotal = parseInt(parseInt(this.items[i].Subtotal) - items.adultPrice);
+                                    this.cartItem += -1;
+                                } // end of inner if
+                            } // end of if
+                        } // end of for loop
+                    }, // end of DeleteAdult
+                    //Remove Row function
+                    Delete(movie) {
+                        for (var i = 0; i < this.items.length; i++) {
+                            // console.log("console.log[i]" + this.items[i]);
+                            if (this.items[i].title == movie) {
+                                this.items.splice(this.items.indexOf(movie), 1);
+                                this.cartItem = this.cartItem - (this.items[i].adult + this.items[i].child);
+                            } // end of if
+                        } // end of for loop
+                    } // end of delete this movie
+                },
+                // get data
+                mounted() {
+                    axios.get(
+                            "https://api.themoviedb.org/3/movie/now_playing?api_key=903cbbd32221d9d8d0055b1ecddfaa2f"
+                            )
+                        .then(response => {
+                            this.results = response.data.results
+                        })
+                    axios.get(
+                            "https://api.themoviedb.org/3/configuration?api_key=903cbbd32221d9d8d0055b1ecddfaa2f"
+                            )
+                        .then(response => {
+                            this.images = response.data.images
+                        })
+                }
+            });
+        </script>
+    </body>
+
+</html>
